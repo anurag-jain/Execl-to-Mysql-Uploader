@@ -1,0 +1,125 @@
+package uploader;
+
+/**
+ *
+ * @author victor
+ */
+import java.io.File;
+import java.io.IOException;
+import jxl.Sheet;
+import jxl.Workbook;
+import jxl.read.biff.BiffException;
+import java.sql.*;
+import java.util.*;
+
+class UploadMySQL {
+    Statement stmt;
+        ResultSet rs;
+   public UploadMySQL() {
+      try {
+        
+        Class.forName("com.mysql.jdbc.Driver");
+        String url = "jdbc:mysql://localhost:3306/src";
+        Connection con =
+                     DriverManager.getConnection(
+                        url,"root", "*****");
+        stmt = con.createStatement();
+       }
+      catch(Exception e) {
+          System.out.println(e);
+      }
+    }
+   public void addValues(String regno,String coursecode,String staffid,String prog,String dept,String sem,String sec,String batch,String file) {
+       try {
+           if(!regno.equals("") && !coursecode.equals("") && !staffid.equals("") && !prog.equals("") )
+           {
+           if(batch.equals(""))
+               batch=null;
+           String query;
+           query = "INSERT ignore INTO meta(regno,coursecode,staffid,program,department,semester,section,batch,filename) VALUES "
+                   + "('"+regno+"','"+coursecode+"','"+staffid+"','"+prog+"','"+dept+"',"+sem+",'"+sec+"',"+batch+",'"+file+"')";
+
+          //System.out.println(query+"\n");
+           /*
+           if(!batch.equals(""))
+                query = query + ",batch";
+           query = query + ")" + "VALUES('"+regno+"','"+coursecode+"','"+staffid+"','"+prog+"','"+dept+"',"+sem+",'"+sec+"','"+file;
+           if(!batch.equals(""))
+                query = query + "','"+batch;
+           query = query + "')";*/
+
+       stmt.executeUpdate(query);
+           }
+ else
+     System.out.println("Error processing file "+file+"\n regnumber ="+regno+"\n coursecode="+coursecode+"\n staffid= "+staffid+"\n ");
+       }
+       catch(Exception e) {
+           System.out.println(e);
+       }
+
+   }
+}
+
+public class Main {
+
+    /**
+     * @param args the command line arguments
+     */
+    private String filename;
+    public void setInputFile(String filename)
+    {
+        this.filename=filename;
+    }
+
+    public void read(UploadMySQL upldr) throws IOException
+    {
+        File inputworkbook=new File(filename);
+        Workbook w;
+        try{
+            int i;
+            w=Workbook.getWorkbook(inputworkbook);
+            Sheet sheet=w.getSheet(0);
+            for(i=1;i<sheet.getRows();i++)
+            {
+                if(!sheet.getCell(0,i).getContents().equals("") && !sheet.getCell(1,i).getContents().equals(""))
+                upldr.addValues(sheet.getCell(0,i).getContents(),
+                        sheet.getCell(1,i).getContents(),
+                        sheet.getCell(2,i).getContents(),
+                        sheet.getCell(3,i).getContents(),
+                        sheet.getCell(4,i).getContents(),
+                        sheet.getCell(5,i).getContents(),
+                        sheet.getCell(6,i).getContents(),
+                        sheet.getCell(7,i).getContents(),
+                        filename
+                        );
+                else break;
+             }
+           System.out.println("\nTotal rows "+i+" in file "+filename);
+        
+        }catch(BiffException e)
+        {
+            System.out.println("Biff Exception"+e);
+        }
+        
+    }
+
+    public static void main(String[] args) throws IOException {
+        // TODO code application logic here
+       Main test = new Main();
+                File dir=new File("/home/victor/Desktop/icampus/corrected");
+            String a[]=dir.list();
+//      Arrays.sort(a, String.CASE_INSENSITIVE_ORDER);
+            int i;
+            UploadMySQL q = new UploadMySQL();
+            for( i=0;i<a.length;i++)
+            {
+		test.setInputFile("/home/victor/Desktop/icampus/corrected/"+a[i]);
+                System.out.println("file no "+ i + "is"+a[i]+"\n");
+		test.read(q);
+             }
+            System.out.println("Total number of files processed is "+i);
+          q=null;
+
+    }
+
+}
